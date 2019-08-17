@@ -1,0 +1,5 @@
+#NODE_ENV
+#PORT
+HOST=localhost
+HTTPS=false
+REACT_APP_URL_BASE='/'

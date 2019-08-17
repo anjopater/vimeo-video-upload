@@ -1,0 +1,37 @@
+.video-file {
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.video-file .btn-select-video {
+    display: inline-flex;
+    position: relative;
+    width: 16em;
+    height: 3em;
+    font-weight: 700;
+    text-align: center;
+    vertical-align: middle;
+    letter-spacing: 0.1px;
+    align-items: center;
+    justify-content: space-around;
+    text-rendering: optimizelegibility;
+    font-size: 1em;
+    line-height: 2.71429;
+    background-color: rgb(0, 173, 239);
+    color: rgb(255, 255, 255);
+    outline: 0px;
+    margin: 0px 0px 1rem;
+    border-width: 0.0625rem;
+    border-style: solid;
+    transition: all 0.1s ease-in-out 0s;
+    padding: 1px 1rem;
+    border-radius: 0.1875rem;
+    border-color: rgb(0, 173, 239);
+    cursor: pointer;
+}
+
+.video-file input {
+    display:none;
+}
