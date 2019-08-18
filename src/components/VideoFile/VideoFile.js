@@ -19,10 +19,21 @@ class Home extends Component {
             isLoadingVideo: false,
 
             videoEmbed: "",
-            vimeoViewLink: ""
+            vimeoViewLink: "",
+
+            videoId: "",
+            isVideoConverting: false
         }
 
         this.fileInput =  React.createRef();
+
+        this.headers = {
+            'Authorization': config.TOKEN,
+            'Content-Type': 'application/json',
+            'Accept': 'application/vnd.vimeo.*+json;version=3.4'
+        };
+
+        this.intervalVideoStatusId = 0; 
     }
 
     componentDidMount() {
@@ -36,15 +47,9 @@ class Home extends Component {
     }
 
     addVideo = async () => {
-        this.setState({ uploadPercent : 5, isLoadingVideo: true});
+        this.setState({ uploadPercent : 2, isLoadingVideo: true});
         const files = this.state.files;
         try {
-            const headers = {
-                'Authorization': config.TOKEN,
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.vimeo.*+json;version=3.4'
-            };
-
             let data = {
                 "name": `${files[0].name}`,
                 "upload": {
@@ -56,9 +61,9 @@ class Home extends Component {
                 },
             }
             
-            const r = await api.addVideo(data, headers);
-            console.log(r.data, r.data.embed.html, r.data.link);
-            this.setState({ videoEmbed:r.data.embed.html, vimeoViewLink: r.data.link });
+            const r = await api.addVideo(data, this.headers);
+            const videoId = r.data.uri.split("/")[2];
+            this.setState({ videoEmbed:r.data.embed.html, vimeoViewLink: r.data.link, videoId: videoId });
             this.uploadVideo(r.data.upload.upload_link);
         } catch (err) {
             console.log("Error to uploading video", err);
@@ -89,7 +94,11 @@ class Home extends Component {
                 onSuccess: function () {
                     console.log("Download %s from %s", upload.file.name);
                     console.log(upload.url);
-                    self.setState({ videoLoaded : true, isLoadingVideo: false });
+                    self.setState({ videoLoaded : true, isLoadingVideo: false, isVideoConverting: true });
+                    self.intervalVideoStatusId = setInterval(()=>{
+                        self.getVideoStatus();
+                    }, 10000);
+                    
                 }
             })
 
@@ -100,6 +109,21 @@ class Home extends Component {
             console.log(error);
         }
     }
+
+    getVideoStatus = async () => {
+        try {
+            const r = await api.getVideoStatus(this.state.videoId, this.headers);
+            const status = r.data.transcode.status;
+            if(status === "complete"){
+                clearInterval(this.intervalVideoStatusId);
+                this.setState({isVideoConverting: false});
+            }
+        } catch (err) {
+            console.log("Error to get video status", err);
+        }
+    }
+
+
 
     onSelectVideo = () => {
         this.fileInput.current.click();
@@ -121,11 +145,13 @@ class Home extends Component {
                     size="lg"
                     style={{ marginBottom: '10px' }}
                 />
-                
-                {this.state.videoLoaded && (
+                <div>Watch the view in Vimeo </div>
+                <a href={this.state.vimeoViewLink}>{this.state.vimeoViewLink}</a>
+                {this.state.isVideoConverting && (
+                    <div className="transcoding-label">The video is transcoding for Vimeo, please hang on a minute...</div>
+                )}
+                {(this.state.videoLoaded && !this.state.isVideoConverting) && (
                     <div>
-                        <div>Watch the view in Vimeo </div>
-                        <a href={this.state.vimeoViewLink}>{this.state.vimeoViewLink}</a>
                         <div dangerouslySetInnerHTML={{__html: this.state.videoEmbed}}></div>
                     </div>
                 )}

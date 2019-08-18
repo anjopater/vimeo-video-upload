@@ -35,3 +35,8 @@
 .video-file input {
     display:none;
 }
+
+.video-file .transcoding-label {
+    margin-top: 10px;
+    font-weight: bold;
+}

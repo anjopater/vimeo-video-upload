@@ -10,3 +10,10 @@ export const addVideo = (data, headers) => {
     });
 };
 
+export const getVideoStatus = (video_id, headers) => {
+    return axios.request({
+        url: config.API_URL + `/videos/${video_id}?fields=uri,upload.status,transcode.status`,
+        method: 'GET',
+        headers: headers,
+    });
+};
