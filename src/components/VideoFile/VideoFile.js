@@ -3,6 +3,8 @@ import * as api from '../../api/videos';
 import tus from 'tus-js-client';
 import config from '../../config';
 import Progressbar from 'emerald-ui/lib/Progressbar';
+import Spinner from 'emerald-ui/lib/Spinner';
+import Alert from 'emerald-ui/lib/Alert';
 
 import './VideoFile.css';
 
@@ -22,7 +24,10 @@ class Home extends Component {
             vimeoViewLink: "",
 
             videoId: "",
-            isVideoConverting: false
+            isVideoConverting: false,
+
+            errorMessage: "",
+            warningMessage: ""
         }
 
         this.fileInput =  React.createRef();
@@ -37,6 +42,9 @@ class Home extends Component {
     }
 
     componentDidMount() {
+        if(!config.TOKEN) {
+            this.setState({warningMessage: "Please set the Vimeo Token."});
+        }
     }
 
     onChangeFile = (event) => {
@@ -47,7 +55,7 @@ class Home extends Component {
     }
 
     addVideo = async () => {
-        this.setState({ uploadPercent : 2, isLoadingVideo: true});
+        this.setState({ uploadPercent : 1, isLoadingVideo: true});
         const files = this.state.files;
         try {
             let data = {
@@ -67,6 +75,7 @@ class Home extends Component {
             this.uploadVideo(r.data.upload.upload_link);
         } catch (err) {
             console.log("Error to uploading video", err);
+            this.setState({errorMessage: "Ups! Something was wrong uplaoding the video."});
         }
     }
 
@@ -74,7 +83,7 @@ class Home extends Component {
         const files = this.state.files;
         let self = this;
         try {
-            var upload = new tus.Upload(files[0], {
+            let upload = new tus.Upload(files[0], {
                 endpoint: upload_link,
                 uploadUrl: upload_link,
                 retryDelays: [0, 3000, 5000, 10000, 20000],
@@ -84,7 +93,8 @@ class Home extends Component {
                 },
 
                 onError: function (error) {
-                    console.log("Failed because: " + error)
+                    this.setState({errorMessage: "Ups! Something was wrong uplaoding the video."});
+                    console.log("Failed because: " + error);
                 },
                 onProgress: function (bytesUploaded, bytesTotal) {
                     var percentage = (bytesUploaded / bytesTotal * 100).toFixed(2);
@@ -93,12 +103,10 @@ class Home extends Component {
                 },
                 onSuccess: function () {
                     console.log("Download %s from %s", upload.file.name);
-                    console.log(upload.url);
                     self.setState({ videoLoaded : true, isLoadingVideo: false, isVideoConverting: true });
                     self.intervalVideoStatusId = setInterval(()=>{
                         self.getVideoStatus();
                     }, 10000);
-                    
                 }
             })
 
@@ -119,11 +127,10 @@ class Home extends Component {
                 this.setState({isVideoConverting: false});
             }
         } catch (err) {
+            this.setState({errorMessage: "Ups! Something was wrong transcoding the the video."});
             console.log("Error to get video status", err);
         }
     }
-
-
 
     onSelectVideo = () => {
         this.fileInput.current.click();
@@ -137,7 +144,6 @@ class Home extends Component {
                     <i className="material-icons">cloud_upload</i>
                     <div>Upload you video </div>
                 </button>
-
                 <Progressbar
                     progress={this.state.uploadPercent}
                     color="success"
@@ -145,13 +151,19 @@ class Home extends Component {
                     size="lg"
                     style={{ marginBottom: '10px' }}
                 />
-                <div>Watch the view in Vimeo </div>
-                <a href={this.state.vimeoViewLink}>{this.state.vimeoViewLink}</a>
+                {this.state.errorMessage && (
+                    <Alert color="danger">{this.state.errorMessage}</Alert>
+                )}
+                {this.state.warningMessage && (
+                    <Alert color="warning">{this.state.warningMessage}</Alert>
+                )}
                 {this.state.isVideoConverting && (
-                    <div className="transcoding-label">The video is transcoding for Vimeo, please hang on a minute...</div>
+                    <div className="transcoding-label">The video is transcoding for Vimeo, please hang on a minute... <Spinner color="success" size="sm"/></div>
                 )}
                 {(this.state.videoLoaded && !this.state.isVideoConverting) && (
                     <div>
+                        <div>Watch the view in Vimeo </div>
+                        <a href={this.state.vimeoViewLink}>{this.state.vimeoViewLink}</a>
                         <div dangerouslySetInnerHTML={{__html: this.state.videoEmbed}}></div>
                     </div>
                 )}
